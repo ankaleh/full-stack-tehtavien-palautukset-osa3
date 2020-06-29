@@ -1,5 +1,7 @@
 require('dotenv').config()
 const mongoose = require('mongoose')
+var uniqueValidator = require('mongoose-unique-validator')
+
 const url = process.env.MONGODB_URI
 
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -11,11 +13,14 @@ mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
     })
 
 mongoose.set('useFindAndModify', false)
+mongoose.set('useCreateIndex', true)
 
 const personSchema = new mongoose.Schema({ //luodaan skeema
-    name: String,
-    number: String,
+    name:  {type: String, required: true, minlength: 3, unique: true },
+    number: {type: String, minlength: 8}
 })
+
+personSchema.plugin(uniqueValidator)
 
 personSchema.set('toJSON', {
     transform: (document, returnedObject) => {
