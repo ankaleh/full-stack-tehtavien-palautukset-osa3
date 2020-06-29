@@ -13,95 +13,95 @@ app.use(express.json())
 
 
 //middlewaret
-morgan.token('body', (req, res) => {
-    return JSON.stringify(req.body)
-  })
+morgan.token('body', (req) => {
+  return JSON.stringify(req.body)
+})
 
 const errorHandler = (error, req, res, next) => {
-    console.log(error)
-    if (error.name==='CastError') {
-        return res.status(400).send({ error: 'malformatted id'}) //bad request
-    } else if (error.name==='ValidationError') {
-        return res.status(400).json({ error: error.message})
-    }
-    next(error)
+  console.log(error)
+  if (error.name==='CastError') {
+    return res.status(400).send({ error: 'malformatted id' }) //bad request
+  } else if (error.name==='ValidationError') {
+    return res.status(400).json({ error: error.message })
+  }
+  next(error)
 }
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 
 app.get('/api/persons', (req, res) => {
-    Person.find({}).then(persons => {
-        res.json(persons)
-    })
+  Person.find({}).then(persons => {
+    res.json(persons)
+  })
 })
 
 app.get('/info', (req, res) => {
-    
-    Person.countDocuments({}, (error, count) => {
-        console.log(count)
-        res.send(`<p>Puhelinluettelossa on ${count} yhteystietoa.</p> <p>${date}</>`)
-    })
-    
-    const date = new Date()
-    console.log(date)
-    
+
+  Person.countDocuments({}, (error, count) => {
+    console.log(count)
+    res.send(`<p>Puhelinluettelossa on ${count} yhteystietoa.</p> <p>${date}</>`)
+  })
+
+  const date = new Date()
+  console.log(date)
+
 })
 
 app.get('/api/persons/:id', (req, res, next) => {
-    Person.findById(req.params.id)
-        .then(person => {
-            if (person) {
-                res.json(person)
-            } else {
-                res.status(404).end() //not found
-            }
+  Person.findById(req.params.id)
+    .then(person => {
+      if (person) {
+        res.json(person)
+      } else {
+        res.status(404).end() //not found
+      }
     })
     .catch(error => next(error))
 })
 
 app.delete('/api/persons/:id', (req, res, next) => {
-    Person.findByIdAndRemove(req.params.id)
-    .then(result => {
-        res.status(204).end() //no content eli kaikki kunnossa: joko poistaminen onnistui tai oliota ei ole edes olemassa
+  Person.findByIdAndRemove(req.params.id)
+    .then(() => {
+      res.status(204).end() //no content eli kaikki kunnossa: joko poistaminen onnistui tai oliota ei ole edes olemassa
     })
-    .catch(error => next(error)) 
+    .catch(error => next(error))
 })
 
 app.post('/api/persons', (req, res, next) => {
-    const body = req.body
+  const body = req.body
 
-    const person = new Person({
-        name: body.name,
-        number: body.number,
-        //id: generatedId()
+  const person = new Person({
+    name: body.name,
+    number: body.number,
+    //id: generatedId()
+  })
+
+  person.save()
+    .then(savedPerson => {
+      res.json(savedPerson)
     })
-
-    person.save()
-        .then(savedPerson => {
-            res.json(savedPerson)
-        })
-        .catch(error => next(error))
+    .catch(error => next(error))
 })
 
 app.put('/api/persons/:id', (req, res, next) => {
-    const body = req.body
-    const person = {
-        name: body.name,
-        number: body.number,
-    }
-    Person.findByIdAndUpdate(req.params.id, person, {new: true})
-        .then(updatedPerson => {
-            res.json(updatedPerson)
-        })
+  const body = req.body
+  const person = {
+    name: body.name,
+    number: body.number,
+  }
+  Person.findByIdAndUpdate(req.params.id, person, { new: true })
+    .then(updatedPerson => {
+      res.json(updatedPerson)
+    })
     .catch(error => next(error))
 })
 
 app.use(errorHandler)
 
-const PORT = process.env.PORT //|| 3001 
+const PORT = process.env.PORT //|| 3001
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`)
 })
 

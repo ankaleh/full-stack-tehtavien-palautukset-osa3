@@ -10,32 +10,32 @@ const name = process.argv[4]
 const number = process.argv[5]
 
 const personSchema = new mongoose.Schema({ //luodaan skeema
-    name: String,
-    number: String,
+  name: String,
+  number: String,
 })
 
 const Person = mongoose.model('Person', personSchema) //määritetään model Person --> Mongoose luo taulun nimeltä People
 
 if (process.argv.length===6) {
-    const person = new Person({
-        name: name,
-        number: number
-    })
-    person.save().then(result => {
-        console.log('Numero tallennettu tietokantatauluun People.')
-        mongoose.connection.close()
-    })
+  const person = new Person({
+    name: name,
+    number: number
+  })
+  person.save().then(() => {
+    console.log('Numero tallennettu tietokantatauluun People.')
+    mongoose.connection.close()
+  })
 } else {
-    Person.find({}).then(result => {
-        console.log(process.argv.length)
-        console.log('Puhelinluettelo: ')
-        
-        result.forEach(person => {
-            console.log(person)
-    
-        })
-        mongoose.connection.close()
+  Person.find({}).then(result => {
+    console.log(process.argv.length)
+    console.log('Puhelinluettelo: ')
+
+    result.forEach(person => {
+      console.log(person)
+
     })
+    mongoose.connection.close()
+  })
 
 }
 
