@@ -1,6 +1,6 @@
-require('dotenv').config
+require('dotenv').config()
 const mongoose = require('mongoose')
-const url = 'mongodb+srv://ankaleh:annan1Mongo2Tieka3@cluster0-tyays.mongodb.net/puhelinnumerot?retryWrites=true&w=majority' //process.env.MONGODB_URI
+const url = process.env.MONGODB_URI
 
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(result => {
@@ -10,6 +10,7 @@ mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
         console.log('Virhe yhdistettäessä MongoDB:hen: ', error.message)
     })
 
+mongoose.set('useFindAndModify', false)
 
 const personSchema = new mongoose.Schema({ //luodaan skeema
     name: String,

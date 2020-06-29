@@ -1,21 +1,31 @@
-require('dotenv').config
+require('dotenv').config()
 
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
 
-app.use(express.json())
+const Person = require('./models/person')
+
 app.use(cors())
 app.use(express.static('build'))
+app.use(express.json())
 
+
+//middlewaret
 morgan.token('body', (req, res) => {
     return JSON.stringify(req.body)
   })
 
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
+const errorHandler = (error, req, res, next) => {
+    console.log(error)
+    if (error.name==='CastError') {
+        return res.status(400).send({ error: 'malformatted id'}) //bad request
+    }
+    next(error)
+}
 
-const Person = require('./models/person')
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 /* const generatedId = () => {
     const maxId = persons.length > 0
@@ -24,7 +34,7 @@ const Person = require('./models/person')
     return maxId+1
 } */
 
-let persons = [
+/* let persons = [
     { 
         name: 'Arto Hellas', 
         number: '040-123456',
@@ -48,42 +58,47 @@ let persons = [
         number: '39-23-6423122',
         id: 4
     }
-]
+] */
 
 app.get('/api/persons', (req, res) => {
     Person.find({}).then(persons => {
         res.json(persons)
-        //mongoose.connection.close()
     })
 })
 
 app.get('/info', (req, res) => {
-    const amount = persons.length
-    console.log(amount)
+    
+    Person.countDocuments({}, (error, count) => {
+        console.log(count)
+        res.send(`<p>Puhelinluettelossa on ${count} yhteystietoa.</p> <p>${date}</>`)
+    })
+    
     const date = new Date()
     console.log(date)
-    res.send(`<p>Puhelinluettelossa on ${amount} yhteystietoa.</p> <p>${date}</>`)
     
 })
 
-app.get('/api/persons/:id', (req, res) => {
-    Person.findById(req.params.id).then(person => {
-        if (person) {
-            res.json(person)
-        } else {
-            res.status(404).end()
-        }
-        //mongoose.connection.close()
+app.get('/api/persons/:id', (req, res, next) => {
+    Person.findById(req.params.id)
+        .then(person => {
+            if (person) {
+                res.json(person)
+            } else {
+                res.status(404).end() //not found
+            }
     })
+    .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    persons = persons.filter(p => p.id !== id)
-    res.status(204).end()
+app.delete('/api/persons/:id', (req, res, next) => {
+    Person.findByIdAndRemove(req.params.id)
+    .then(result => {
+        res.status(204).end() //no content eli kaikki kunnossa: joko poistaminen onnistui tai oliota ei ole edes olemassa
+    })
+    .catch(error => next(error)) 
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     const body = req.body
     
     /* const added = Person.find({}).then(persons => {
@@ -91,14 +106,17 @@ app.post('/api/persons', (req, res) => {
     }) */
         
     if (!body.number) {
-        return res.status(400).json({
+        return res.status(400).json({ //bad request
             error: 'Numero puuttuu.'
         })
+        //res.status(400).end()
+        
     }
     if (!body.name) {
-        return res.status(400).json({
+        return res.status(400).json({ //bad request
             error: 'Nimi puuttuu.'
         })
+        //res.status(400).end()
     }
     /* if (added.length === 1) {
         return res.status(400).json({
@@ -117,7 +135,22 @@ app.post('/api/persons', (req, res) => {
     })
 })
 
-const PORT = process.env.PORT || 3001
+app.put('/api/persons/:id', (req, res, next) => {
+    const body = req.body
+    const person = {
+        name: body.name,
+        number: body.number,
+    }
+    Person.findByIdAndUpdate(req.params.id, person, {new: true})
+        .then(updatedPerson => {
+            res.json(updatedPerson)
+        })
+    .catch(error => next(error))
+})
+
+app.use(errorHandler)
+
+const PORT = process.env.PORT //|| 3001 
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
