@@ -1,3 +1,5 @@
+require('dotenv').config
+
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
@@ -13,12 +15,14 @@ morgan.token('body', (req, res) => {
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-const generatedId = () => {
+const Person = require('./models/person')
+
+/* const generatedId = () => {
     const maxId = persons.length > 0
     ? Math.max(...persons.map(p => p.id))
     :0
     return maxId+1
-}
+} */
 
 let persons = [
     { 
@@ -47,7 +51,10 @@ let persons = [
 ]
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    Person.find({}).then(persons => {
+        res.json(persons)
+        //mongoose.connection.close()
+    })
 })
 
 app.get('/info', (req, res) => {
@@ -60,14 +67,14 @@ app.get('/info', (req, res) => {
 })
 
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(p => p.id === id)
-
-    if (person) {
-        res.json(person)
-    } else {
-        res.status(404).end()
-    }
+    Person.findById(req.params.id).then(person => {
+        if (person) {
+            res.json(person)
+        } else {
+            res.status(404).end()
+        }
+        //mongoose.connection.close()
+    })
 })
 
 app.delete('/api/persons/:id', (req, res) => {
@@ -78,7 +85,11 @@ app.delete('/api/persons/:id', (req, res) => {
 
 app.post('/api/persons', (req, res) => {
     const body = req.body
-    const added = persons.filter(p => p.name === body.name)
+    
+    /* const added = Person.find({}).then(persons => {
+        persons.filter(p => p.name === body.name)
+    }) */
+        
     if (!body.number) {
         return res.status(400).json({
             error: 'Numero puuttuu.'
@@ -89,20 +100,21 @@ app.post('/api/persons', (req, res) => {
             error: 'Nimi puuttuu.'
         })
     }
-    if (added.length === 1) {
+    /* if (added.length === 1) {
         return res.status(400).json({
             error: 'Yhteystieto on jo puhelinluettelossa.'
         })
-    }
+    } */
 
-    const person = {
+    const person = new Person({
         name: body.name,
         number: body.number,
-        id: generatedId()
-    }
+        //id: generatedId()
+    })
 
-    persons = persons.concat(person)
-    res.json(person)
+    person.save().then(savedPerson => {
+        res.json(savedPerson)
+    })
 })
 
 const PORT = process.env.PORT || 3001
