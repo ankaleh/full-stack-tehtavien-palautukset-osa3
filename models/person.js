@@ -6,7 +6,7 @@ const url = process.env.MONGODB_URI
 
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    console.log('Yhdistetty MongoDB:hen.')
+    console.log('Yhdistetty MongoDB:hen!')
   })
   .catch((error) => {
     console.log('Virhe yhdistettäessä MongoDB:hen: ', error.message)
